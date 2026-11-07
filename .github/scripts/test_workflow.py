@@ -10,6 +10,25 @@ import yaml
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def workflow_value(expression, context):
+    """Evaluate the limited checkout/routing expression subset in fixtures."""
+    text = expression.strip().removeprefix("${{").removesuffix("}}").strip()
+    for key in sorted(context, key=len, reverse=True):
+        text = text.replace(key, repr(context[key]))
+    text = text.replace("&&", " and ").replace("||", " or ")
+    tree = ast.parse(text, mode="eval")
+    functions = {"startsWith": lambda text, prefix: text.startswith(prefix),
+                 "format": lambda pattern, value: pattern.format(value)}
+    allowed = (ast.Expression, ast.BoolOp, ast.And, ast.Or, ast.Compare, ast.Eq,
+               ast.Constant, ast.Call, ast.Name, ast.Load)
+    for node in ast.walk(tree):
+        if not isinstance(node, allowed):
+            raise ValueError("Unexpected routing expression")
+        if isinstance(node, ast.Name) and node.id not in functions:
+            raise ValueError("Unknown routing function")
+    return eval(compile(tree, "<workflow fixture>", "eval"), {"__builtins__": {}}, functions)
+
+
 def gate(expression, results, selected, mode="prepare", cancelled=False):
     """Evaluate only the boolean subset used by the actual needs gates."""
     text = expression.strip().removeprefix("${{").removesuffix("}}").strip()
@@ -68,7 +87,7 @@ class WorkflowPolicy(unittest.TestCase):
         self.assertNotIn("needs", self.jobs["maintenance"])
         self.assertIn("github.event_name != 'schedule'", self.jobs["check"]["if"])
         self.assertIn("github.event_name == 'schedule'", self.jobs["maintenance"]["if"])
-        self.assertEqual(self.workflow["on"]["workflow_dispatch"]["inputs"]["mode"]["options"], ["prepare", "maintenance"])
+        self.assertEqual(self.workflow["on"]["workflow_dispatch"]["inputs"]["mode"]["options"], ["prepare", "publish", "maintenance"])
 
     def test_selected_phases_must_succeed_and_only_empty_phases_may_skip(self):
         states = ("success", "skipped", "failure", "cancelled")
@@ -103,12 +122,42 @@ class WorkflowPolicy(unittest.TestCase):
         # checkout's implicit event SHA makes its full-history fallback fetch the
         # peeled commit into refs/tags/<version>, losing the release annotation.
         # Tag readers need an explicit ref; branch runs must keep the event SHA.
-        expected = "${{ startsWith(github.ref, 'refs/tags/') && github.ref || github.sha }}"
+        contexts = (
+            (dict(github_event_name="push", github_ref="refs/tags/1.0.0", mode="", tag=""), "refs/tags/1.0.0"),
+            (dict(github_event_name="push", github_ref="refs/heads/main", mode="", tag=""), "event-sha"),
+            (dict(github_event_name="workflow_dispatch", github_ref="refs/heads/main", mode="prepare", tag="1.0.0"), "event-sha"),
+            (dict(github_event_name="workflow_dispatch", github_ref="refs/heads/main", mode="publish", tag="1.0.0"), "refs/tags/1.0.0"),
+        )
         for job in ("check", "test", "release"):
             checkout = self.jobs[job]["steps"][0]
             self.assertTrue(checkout["uses"].startswith("actions/checkout@"))
-            self.assertEqual(checkout["with"]["ref"], expected)
             self.assertEqual(checkout["with"]["fetch-depth"], "0")
+            for case, expected in contexts:
+                context = {
+                    "github.event_name": case["github_event_name"],
+                    "github.ref": case["github_ref"], "github.sha": "event-sha",
+                    "inputs.mode": case["mode"], "inputs.release-tag": case["tag"],
+                    "needs.check.outputs.mode": "publish" if expected.startswith("refs/tags/") else "prepare",
+                    "needs.check.outputs.version": "1.0.0",
+                }
+                self.assertEqual(workflow_value(checkout["with"]["ref"], context), expected)
+
+    def test_manual_publication_reuses_tag_plan_only_from_main(self):
+        planner = next(step for step in self.jobs["check"]["steps"] if step.get("id") == "plan")
+        self.assertEqual(planner["with"]["source-sha"], "${{ steps.checkout.outputs.commit }}")
+        for branch, expected in (("main", "push"), ("other", "workflow_dispatch")):
+            context = {"github.event_name": "workflow_dispatch", "github.ref": "refs/heads/" + branch,
+                       "inputs.mode": "publish", "inputs.release-tag": "1.0.0"}
+            self.assertEqual(workflow_value(planner["with"]["event"], context), expected)
+            self.assertEqual(workflow_value(planner["with"]["ref"], context), "refs/tags/1.0.0")
+        for job in ("test", "release"):
+            for step in self.jobs[job]["steps"]:
+                if "/read-binary-release@" in step["uses"] or "/publish-binary-release@" in step["uses"]:
+                    self.assertEqual(step["with"]["tag"], "${{ needs.check.outputs.version }}")
+        # Publication must never acquire the preparation App token or create a tag.
+        for step in self.jobs["release"]["steps"]:
+            if "create-github-app-token@" in step["uses"] or "/prepare-binary-release@" in step["uses"]:
+                self.assertEqual(step["if"], "needs.check.outputs.mode == 'prepare'")
 
     def test_operations_use_immutable_dedicated_actions(self):
         pin = re.compile(r"^(?:actions/(?:checkout|upload-artifact|download-artifact|create-github-app-token)|tdesaules/github-actions/(?:workflow|lint|oci|maintenance)/[a-z-]+)@[0-9a-f]{40}$")

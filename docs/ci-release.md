@@ -16,6 +16,7 @@ for current execution results.
 | Branch push | Select checks from the Git diff; build and test affected application code |
 | Documentation-only push | Run the applicable documentation checks, without compiling binaries |
 | Manual `prepare` on `main` | Compute the release version, build both native platforms, qualify, then prepare metadata and a tag |
+| Manual `publish` on `main` | Resume an existing annotated tag using the current workflow and its exact prepared artifacts |
 | Stable tag push | Retrieve and retest the exact prepared artifacts; publish the GitHub Release without rebuilding |
 | Schedule or manual `maintenance` | Run Renovate, link checks and advisory dependency rescans independently |
 
@@ -133,6 +134,14 @@ all required phases to produce a coherent receipt set.
 Once the tag exists, retry its publication run rather than preparing the same
 version again. A later failed preparation attempt does not invalidate the
 successful attempt and immutable artifact IDs recorded by that tag.
+
+If the tagged workflow itself needs a correction, rerunning it retains the old
+workflow definition. Push and validate the correction on `main`, then select
+**Run workflow → main → mode `publish`** and set **release-tag** to the existing
+version (for example `1.0.0`). This uses the current workflow to verify the tag,
+lint its original source, retest both prepared archives and publish those exact
+bytes. It neither rebuilds binaries nor moves the tag. The tag must carry the
+preparation marker and its recorded artifacts must still be available.
 
 Artifacts and advisory reports are retained for 90 days. GitHub Release assets
 remain downloadable afterward, but verification retries requiring expired CI
