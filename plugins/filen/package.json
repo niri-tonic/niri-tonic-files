@@ -7,7 +7,7 @@
   "scripts": { "test": "node --test test/*.test.mjs" },
   "dependencies": { "@filen/sdk": "0.4.2" },
   "overrides": {
-    "@filen/sdk": { "axios": "0.34.0" },
+    "@filen/sdk": { "axios": "0.35.0" },
     "js-crypto-key-utils": { "elliptic": "6.6.1" }
   }
 }
