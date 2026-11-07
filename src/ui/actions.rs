@@ -469,7 +469,7 @@ impl Ui {
                     .transient_for(&self.window)
                     .modal(true)
                     .program_name("Niri Tonic Files")
-                    .version(env!("CARGO_PKG_VERSION"))
+                    .version(crate::APP_VERSION)
                     .comments(
                         "A quiet, column-based file explorer for Niri and Dank Material Shell.",
                     )

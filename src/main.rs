@@ -23,14 +23,18 @@ fn main() -> glib::ExitCode {
 }
 
 fn run() -> Result<glib::ExitCode, String> {
+    let args: Vec<_> = std::env::args_os().skip(1).collect();
+    if args.iter().any(|s| s == "--version" || s == "-V") {
+        println!("niri-tonic-files {}", niri_tonic_files::APP_VERSION);
+        return Ok(glib::ExitCode::SUCCESS);
+    }
     let mut paths = Paths::from_env()?;
     let mut config = Config::load(&paths.config).map_err(|e| e.to_string())?;
     let theme = Theme::load(&config.appearance.theme)?;
     let fonts = detect_fonts(&config.appearance, &paths);
-    let args: Vec<_> = std::env::args_os().skip(1).collect();
     if args.iter().any(|s| s == "--help" || s == "-h") {
         println!(
-            "niri-tonic-files [FOLDER|file:///URI|filen://ACCOUNT/PATH|drive://ACCOUNT/PATH ...]\n\n  --check-config   Validate configuration and theme\n  --smoke-test     Exercise the UI in a temporary directory, then exit\n  --help           Show this help\n\nA two-pane Wayland file explorer. Starts in Home by default."
+            "niri-tonic-files [FOLDER|file:///URI|filen://ACCOUNT/PATH|drive://ACCOUNT/PATH ...]\n\n  --check-config   Validate configuration and theme\n  --smoke-test     Exercise the UI in a temporary directory, then exit\n  --version        Show the application version\n  --help           Show this help\n\nA two-pane Wayland file explorer. Starts in Home by default."
         );
         return Ok(glib::ExitCode::SUCCESS);
     }
