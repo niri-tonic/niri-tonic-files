@@ -9,7 +9,7 @@ const sdkRequire = createRequire(require.resolve('@filen/sdk'));
 
 test('patched Axios preserves the SDK instance interface without any transport', async () => {
   const axios = sdkRequire('axios');
-  assert.equal(axios.VERSION, '0.34.0');
+  assert.equal(axios.VERSION, require('../package.json').overrides['@filen/sdk'].axios);
   const sdk = new FilenSDK({ connectToSocket: false, metadataCache: false });
   let calls = 0;
   sdk.axiosInstance.defaults.adapter = async config => {
