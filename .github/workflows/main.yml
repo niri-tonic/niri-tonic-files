@@ -12,14 +12,6 @@ on:
         required: true
         default: prepare
         options: [prepare, maintenance]
-      initial-release:
-        description: Explicitly prepare the first official release (1.0.0)
-        type: boolean
-        default: false
-      renovate-dry-run:
-        description: Resolve dependency updates without creating branches or PRs
-        type: boolean
-        default: true
   schedule:
     - cron: '37 5 * * 1'
 
@@ -67,7 +59,6 @@ jobs:
           before: ${{ github.event.before }}
           source-sha: ${{ steps.checkout.outputs.commit }}
           mode: ${{ inputs.mode }}
-          initial-release: ${{ inputs.initial-release || false }}
           config: cliff.toml
           output: .build/plan.json
       - name: Retain execution plan
@@ -382,7 +373,7 @@ jobs:
         with:
           repository: ${{ github.repository }}
           token: ${{ steps.bot-token.outputs.token }}
-          dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.renovate-dry-run || false }}
+          dry-run: 'false'
       - name: Enumerate documentation links
         if: ${{ !cancelled() && steps.route.outcome == 'success' }}
         id: files

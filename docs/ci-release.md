@@ -107,18 +107,16 @@ in repository settings. The person pushing workflow source needs an identity
 permitted to update workflows (SSH repository access or an appropriately scoped
 HTTPS credential), separate from the job and release-App tokens.
 
-## First official release
-
-Development remains at `0.1.0` without automatic releases.
+## Prepare a release
 
 1. Confirm that the `main` branch CI has passed.
 2. Configure the App settings above.
 3. Open the repository's **Actions → main → Run workflow**.
-4. Select branch `main`, mode `prepare`, and enable `initial-release`.
-5. The pipeline qualifies AMD64 and ARM64 artifacts, then prepares **1.0.0**.
+4. Select branch `main` and mode `prepare`.
+5. The pipeline qualifies AMD64 and ARM64 artifacts, then prepares the next release.
 6. The annotated tag triggers verification and GitHub Release publication.
 
-For later releases, use `prepare` with `initial-release` disabled. `feat` bumps
+In `prepare` mode, `feat` bumps
 minor; `fix` and `perf` bump patch; any breaking change takes precedence (major
 after 1.0, minor before 1.0). Other changes alone produce an explicit no-op.
 Version selection uses full commit messages independently of changelog filtering.
@@ -149,5 +147,5 @@ signing identity and successful signing evidence.
 Weekly maintenance uses containerized Renovate and link checks. It also rescans
 the current source dependency inventory against updated advisory data; these
 reports are explicitly source-bound, not presented as scans of an old binary.
-Manual maintenance defaults to a Renovate dry run; turn off `renovate-dry-run`
-to allow update branches/PRs.
+Both manual and scheduled maintenance allow Renovate to create update branches
+and pull requests.
