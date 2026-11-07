@@ -474,7 +474,7 @@ impl Ui {
                         "A quiet, column-based file explorer for Niri and Dank Material Shell.",
                     )
                     .license_type(gtk::License::Gpl30Only)
-                    .website("https://github.com/tdesaules/niri-tonic-files")
+                    .website("https://github.com/niri-tonic/niri-tonic-files")
                     .build()
                     .present();
             }

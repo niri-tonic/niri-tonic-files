@@ -5,7 +5,7 @@ edition = "2024"
 rust-version = "1.85"
 description = "A quiet, column-based Wayland file explorer for Niri and Dank Material Shell"
 license = "GPL-3.0-only"
-repository = "https://github.com/tdesaules/niri-tonic-files"
+repository = "https://github.com/niri-tonic/niri-tonic-files"
 
 [dependencies]
 gtk = { package = "gtk4", version = "0.10", features = ["v4_12"] }
