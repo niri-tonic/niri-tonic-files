@@ -6,7 +6,7 @@ APP_ID = io.github.tdesaules.NiriTonicFiles
 FILEN_DIR = $(DESTDIR)$(PREFIX)/share/niri-tonic-files/plugins/filen
 DRIVE_DIR = $(DESTDIR)$(PREFIX)/share/niri-tonic-files/plugins/google-drive
 
-.PHONY: build check check-ci filen check-filen check-google-drive install-plugin-sources install-filen install-google-drive install uninstall
+.PHONY: build check check-ci check-changelog filen check-filen check-google-drive install-plugin-sources install-filen install-google-drive install uninstall
 
 build:
 	$(CARGO) build --release --locked
@@ -22,6 +22,9 @@ check-google-drive:
 
 check-ci:
 	$(PYTHON) -m unittest discover -s .github/scripts -v
+
+check-changelog:
+	$(PYTHON) .github/scripts/check_changelog.py -v
 
 install-plugin-sources:
 	install -d "$(FILEN_DIR)"

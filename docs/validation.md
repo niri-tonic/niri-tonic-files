@@ -20,6 +20,11 @@ configuration, navigation, collisions, cancellation, archive/restore, links,
 non-UTF-8 paths and connector transfers. Adapter tests use injected SDK/HTTP
 responses and local OAuth callback listeners; they do not use cloud accounts.
 
+When changing `cliff.toml`, run `make check-changelog` with git-cliff 2.14.2 on
+PATH (or set `GIT_CLIFF` to its executable). This renders first-release and
+multi-release fixtures, including empty groups and filtered commits, to catch
+formatting errors in generated notes before release preparation.
+
 ## Niri desktop checks
 
 Run inside a Niri session with one active output, `wtype`, and Python gi/AT-SPI:

@@ -99,6 +99,17 @@ class WorkflowPolicy(unittest.TestCase):
         for job in ("lint", "build", "test", "release"):
             self.assertFalse(gate(self.jobs[job]["if"], results, selected))
 
+    def test_release_checkouts_preserve_annotated_tags(self):
+        # checkout's implicit event SHA makes its full-history fallback fetch the
+        # peeled commit into refs/tags/<version>, losing the release annotation.
+        # Tag readers need an explicit ref; branch runs must keep the event SHA.
+        expected = "${{ startsWith(github.ref, 'refs/tags/') && github.ref || github.sha }}"
+        for job in ("check", "test", "release"):
+            checkout = self.jobs[job]["steps"][0]
+            self.assertTrue(checkout["uses"].startswith("actions/checkout@"))
+            self.assertEqual(checkout["with"]["ref"], expected)
+            self.assertEqual(checkout["with"]["fetch-depth"], "0")
+
     def test_operations_use_immutable_dedicated_actions(self):
         pin = re.compile(r"^(?:actions/(?:checkout|upload-artifact|download-artifact|create-github-app-token)|tdesaules/github-actions/(?:workflow|lint|oci|maintenance)/[a-z-]+)@[0-9a-f]{40}$")
         for job in self.jobs.values():

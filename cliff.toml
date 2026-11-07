@@ -8,21 +8,27 @@ All notable changes are documented here using Keep a Changelog and Semantic Vers
 
 """
 body = """
-{% if version %}## [{{ version }}] - {{ timestamp | date(format="%Y-%m-%d") }}{% endif %}
-{% for group in ["Added", "Changed", "Deprecated", "Removed", "Fixed", "Security"] %}
-{% set entries = commits | filter(attribute="group", value=group) %}
-{% if entries | length > 0 %}
-### {{ group }}
-{% for commit in entries %}
-- {% if commit.breaking %}**Breaking:** {% endif %}{{ commit.message | upper_first }}{% if commit.breaking_description %}: {{ commit.breaking_description }}{% endif %}
-{% endfor %}
-{% endif %}
-{% endfor %}
-{% if version %}
-{% if previous.version %}[{{ version }}]: https://github.com/niri-tonic/niri-tonic-files/compare/{{ previous.version }}...{{ version }}
-{% else %}[{{ version }}]: https://github.com/niri-tonic/niri-tonic-files/releases/tag/{{ version }}
-{% endif %}
-{% endif %}
+{%- if version -%}
+## [{{ version }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+{%- endif -%}
+{%- for group in ["Added", "Changed", "Deprecated", "Removed", "Fixed", "Security"] -%}
+{%- set entries = commits | filter(attribute="group", value=group) -%}
+{%- if entries | length > 0 -%}
+{{ "\n\n" }}### {{ group }}{{ "\n" }}
+{%- for commit in entries -%}
+{{ "\n" }}- {% if commit.breaking %}**Breaking:** {% endif %}{{ commit.message | upper_first }}{% if commit.breaking_description %}: {{ commit.breaking_description }}{% endif %}
+{%- endfor -%}
+{%- endif -%}
+{%- endfor -%}
+{%- if version -%}
+{{ "\n\n" }}[{{ version }}]: https://github.com/niri-tonic/niri-tonic-files/
+{%- if previous.version -%}
+compare/{{ previous.version }}...{{ version }}{{ "\n" }}
+{%- else -%}
+releases/tag/{{ version }}
+{%- endif -%}
+{{ "\n" }}
+{%- endif -%}
 """
 trim = true
 
