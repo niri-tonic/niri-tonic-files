@@ -74,8 +74,8 @@ In the application's repository settings, configure:
 
 | Kind | Name | Purpose |
 | --- | --- | --- |
-| Variable | `RELEASE_APP_ID` | ID of the shared `niri-tonic-bot` GitHub App |
-| Secret | `RELEASE_APP_PRIVATE_KEY` | That App's private key |
+| Variable | `BOT_APP_ID` | ID of the shared `niri-tonic-bot` GitHub App |
+| Secret | `BOT_APP_PRIVATE_KEY` | That App's private key |
 
 Install the shared App on this repository with **Contents, Pull requests, Issues
 and Workflows: write**, and **Actions: read**. Release and maintenance jobs each
