@@ -114,10 +114,9 @@ impl Process {
             .oauth
             .as_ref()
             .and_then(|auth| auth.client_secret.as_ref())
+            && let Some(env) = &secret.env
         {
-            if let Some(env) = &secret.env {
-                cmd.env_remove(env);
-            }
+            cmd.env_remove(env);
         }
         let provider = provider(instance);
         let mut child = cmd.spawn().map_err(|_| {

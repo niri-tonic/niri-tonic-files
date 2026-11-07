@@ -58,10 +58,9 @@ impl Paths {
         if let Some(uri) = path
             .to_str()
             .filter(|s| s.starts_with("file:///") || crate::locations::is_remote_uri(s))
+            && let Ok(path) = crate::locations::parse(uri)
         {
-            if let Ok(path) = crate::locations::parse(uri) {
-                return path;
-            }
+            return path;
         }
         if path == Path::new("~") {
             self.home.clone()
@@ -332,13 +331,13 @@ impl Config {
         let path = crate::locations::parse(text)?;
         if crate::locations::is_remote_uri(text) {
             let id = crate::locations::location(&path).connector;
-            if let Some(instance) = self.connectors.instances.iter().find(|i| i.id == id) {
-                if !text.starts_with(&format!("{}://", instance.kind.scheme())) {
-                    return Err(crate::connector::Error::new(
-                        crate::connector::ErrorCode::InvalidInput,
-                        "URI provider does not match the configured connector instance",
-                    ));
-                }
+            if let Some(instance) = self.connectors.instances.iter().find(|i| i.id == id)
+                && !text.starts_with(&format!("{}://", instance.kind.scheme()))
+            {
+                return Err(crate::connector::Error::new(
+                    crate::connector::ErrorCode::InvalidInput,
+                    "URI provider does not match the configured connector instance",
+                ));
             }
         }
         Ok(path)
@@ -508,16 +507,14 @@ impl Config {
                     code.validate()?;
                 }
             }
-            if let Some(command) = &instance.command {
-                if command.is_empty()
+            if let Some(command) = &instance.command
+                && (command.is_empty()
                     || command[0].trim().is_empty()
-                    || command.iter().any(|arg| arg.contains('\0'))
-                {
-                    return Err(
-                        "Connector command must be a nonempty argv list without NUL characters"
-                            .into(),
-                    );
-                }
+                    || command.iter().any(|arg| arg.contains('\0')))
+            {
+                return Err(
+                    "Connector command must be a nonempty argv list without NUL characters".into(),
+                );
             }
         }
         Ok(config)

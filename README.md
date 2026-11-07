@@ -27,7 +27,7 @@ A minimal, English-language Rust file explorer for Linux, Wayland, **Niri** and
 
 ## Build and run
 
-Requires Linux, Rust **1.85+**, GTK **4.12+**, a C linker and pkg-config.
+Requires Linux, Rust **1.92+**, GTK **4.12+**, a C linker and pkg-config.
 
 ```sh
 # Fedora (use a development toolbox/distrobox on immutable systems)
