@@ -60,41 +60,17 @@ Recursive copy is incremental, not transactional. Archive is an ordinary sibling
 `.archive` directory, and restore moves back to its parent (not version history
 or recovery from provider Trash).
 
-## Isolated verification
+## Tests and dependencies
 
 `npm test` injects an in-memory SDK; no account/network calls or real credentials.
-Rust connector tests inject a local RPC executable. Live encryption, account
-authentication/2FA, service errors, and cross-client races still require explicit
-future authorization for disposable-account validation.
+Rust connector tests inject a local RPC executable. Live authentication, encrypted
+service transfers and external-client races remain unverified.
 
-## Dependency audit and compatibility (2026-11-06)
+Scoped overrides in `package.json` select Axios 0.34.0 and elliptic 6.6.1 because
+the SDK's dependency ranges retain older vulnerable versions. Compatibility tests
+cover the SDK's Axios interface, EC key conversion and RSA DER/PEM conversion.
+The adapter uses the SDK's native Node HTTP transport and RSA account keys.
 
-`npm audit fix --package-lock-only --ignore-scripts` could not remediate within
-upstream ranges (`axios ^0.28.1`, `elliptic ~6.5.0`). Its suggested forced SDK
-downgrade was not applied. Scoped, exact resolutions select Axios **0.34.0** in
-the SDK and elliptic **6.6.1** in `js-crypto-key-utils`; the SDK remains 0.4.2.
-
-These are reviewed overrides, not a claim of compatibility with every consumer:
-
-- Axios retains its legacy 0.x API. Its documented null-prototype config/header
-  changes are compatible with the SDK's property access and plain string headers;
-  the SDK does not call merged-header `hasOwnProperty` or coerce those objects.
-  SDK construction and its Axios get/post, JSON transformation and AbortSignal
-  interface are tested using an in-memory transport. The adapter is Node-only:
-  the SDK's `dist/node/api/client.js` uses native HTTP(S) for Node requests, with
-  Axios used by its non-Node fallback. No live transport was tested.
-- elliptic's same-major update retains `ec`, `keyFromPublic`, `keyFromPrivate`
-  and `getPublic`, the APIs used by `js-crypto-key-utils/dist/octenc.js`. Isolated
-  tests exercise EC private-to-public conversion against Node crypto, plus the
-  actual SDK DER-to-PEM conversion for disposable RSA public/private keys.
-
-The audit now reports **zero high/critical and three low dependency findings**,
-all the same unpatched advisory propagated through elliptic → key-utils → SDK:
-[GHSA-848j-6mx2-7j84](https://github.com/advisories/GHSA-848j-6mx2-7j84), risky
-cryptographic primitive implementation, affecting the latest elliptic 6.6.1.
-There is no published patched elliptic release. The package is loaded at runtime,
-but the adapter's SDK account-key conversion uses RSA DER/PEM; elliptic is invoked
-by key-utils for EC conversion, and this adapter exposes neither EC conversion
-nor ECDSA signing. The removed critical signing issue is patched by 6.6.1; it was
-not an adapter signing code path. This assessment is specific to this Node-only
-adapter and pinned SDK, not a general exemption for other SDK consumers.
+elliptic 6.6.1 is affected by
+[GHSA-848j-6mx2-7j84](https://github.com/advisories/GHSA-848j-6mx2-7j84).
+Run `npm audit` for current findings; reassess the overrides when updating the SDK.

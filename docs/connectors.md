@@ -1,4 +1,4 @@
-# Connectors and plugin evolution
+# Connector architecture
 
 ## In-process contract
 
@@ -75,13 +75,4 @@ validation boundaries. Drive OAuth uses PKCE and a loopback callback, with optio
 per-instance owner-only refresh-token files outside YAML. Interactive authorization
 has a separate longer deadline from ordinary API operations.
 
-## Feasibility assessment (2026-11-06)
-
-| Provider | Evidence and constraints | Decision |
-| --- | --- | --- |
-| Filen | Official [TypeScript SDK](https://github.com/FilenCloudDienste/filen-sdk-ts), pinned to 0.4.2, with isolated instance processes. API signatures and non-overwrite behavior were checked against its source. | Implemented; isolated tests only. Real-account auth/encryption/service behavior has not been validated. |
-| Google Drive | Official [Drive API](https://developers.google.com/workspace/drive/api/guides/about-sdk), browser OAuth, stable IDs behind virtual names, paginated listings and native document exports. Drive cannot atomically guarantee unique names. | Implemented for My Drive; isolated validation only. Shared drives excluded. |
-
-**Remote exploration and automatic synchronization are different products.** The
-contract supports user-initiated operations. It does not include a reconciliation
-engine, conflict database, background replication or offline automatic sync.
+The contract supports user-initiated operations, not automatic synchronization.

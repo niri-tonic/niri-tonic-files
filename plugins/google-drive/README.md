@@ -7,18 +7,12 @@ local ephemeral OAuth callback listeners, never Google accounts or live Drive.
 
 ## OAuth and private sessions
 
-Enable Drive API in a Google Cloud project and create a **Desktop app** OAuth
-client. The host sends the client ID and optional resolved client secret over
+For account setup, see
+[Google Drive configuration](https://github.com/niri-tonic/niri-tonic-files/blob/main/docs/google-drive.md).
+The host sends the client ID and optional resolved client secret over
 stdin. Initial authorization opens the system browser using `xdg-open` without
 a shell. The redirect is `http://127.0.0.1:<ephemeral-port>/`; authorization uses
 random state, PKCE S256, account selection, and a five-minute deadline.
-
-The requested scope is `https://www.googleapis.com/auth/drive`, permitting
-browsing existing My Drive files. `drive.file` cannot provide that experience.
-The full Drive scope is **restricted**, so Google's sensitive/restricted-scope
-verification rules apply to public distribution. External OAuth projects in
-**Testing** issue refresh tokens that normally expire after **7 days**. Add the
-intended Google accounts as test users while testing your own OAuth project.
 
 When `persist_session` is true, the host selects an absolute per-instance
 `token_path` (normally `paths.state/oauth/<instance>/session.json`). Refresh
@@ -131,7 +125,7 @@ successful creation, copy or move. Refresh before retrying. `copy_unique` is
 best-effort under concurrent clients. Recursive copies can leave completed
 children if a later child fails or collides.
 
-## Official references verified for this implementation
+## API references
 
 * [Installed-app OAuth, loopback and PKCE](https://developers.google.com/identity/protocols/oauth2/native-app)
 * [Refresh-token expiration / Testing](https://developers.google.com/identity/protocols/oauth2#expiration)

@@ -4,10 +4,10 @@ The single workflow is `.github/workflows/main.yml`, named `main`, with exactly
 six jobs: `check`, `lint`, `build`, `test`, `release`, and `maintenance`.
 Operations use dedicated Docker actions from `tdesaules/github-actions`; checkout,
 artifact transport and GitHub App tokens use the pinned official actions.
-Catalog actions are pinned to `ccd2be174adf4b29b71ce80cd76994ff97e1e8b8`, using
-the native image digests published in catalog release `1.6.0`.
-See [validation evidence](validation.md#ci-preparation--2026-11-07) for the
-post-bootstrap hosted qualification status before activating this workflow.
+The workflow pins action revisions; catalog actions pin their native image
+digests. Check the
+[Actions page](https://github.com/niri-tonic/niri-tonic-files/actions/workflows/main.yml)
+for current execution results.
 
 ## Routing
 
@@ -23,20 +23,11 @@ Manual runs on another branch fail explicitly. Tags must be stable SemVer withou
 a `v` prefix. Pull requests do not trigger this workflow. Required selected phases
 must succeed; a skipped phase is accepted only when the plan declared it empty.
 
-## What is checked
-
-- Rust formatting, Clippy and all Rust tests with the committed Cargo lockfile.
-- Filen's locked npm installation and offline tests; Google Drive's offline tests.
-- Python syntax and the mock connector protocol check.
-- Workflow, YAML, TOML, Markdown and desktop-entry validation as applicable.
-- Repository CI-policy fixtures under `.github/scripts/`, including success,
-  failure, cancellation, intentionally skipped phases and tag no-rebuild gates.
-- The exact archived executable: version, isolated configuration and mapped GTK
-  smoke test under a private headless Weston/D-Bus session.
-
-No Filen or Google account credentials are used in CI. Real Niri keyboard/pointer
-acceptance tests remain available locally through `scripts/check-wayland.py` and
-`scripts/check-connectors.py`; the hosted GUI smoke uses Weston rather than Niri.
+CI checks Rust, adapter tests, Python, repository formats and workflow policy.
+It also tests the archived executable's version, isolated configuration and GTK
+mapping under headless Weston/D-Bus. No cloud account credentials are used.
+See [testing](https://github.com/niri-tonic/niri-tonic-files/blob/main/docs/validation.md)
+for local checks and Niri desktop scenarios.
 
 ## Native binaries and provenance
 
@@ -99,19 +90,10 @@ the [Renovate GitHub App guide](https://docs.renovatebot.com/modules/platform/gi
 Merge queues permission is only needed if merge queues are enabled; this workflow
 does not enable them. Approve updated permissions on the App installation.
 
-The application repository is `niri-tonic/niri-tonic-files`. Install/authorize
-the release App for the **niri-tonic organization** and this repository. The
-workflow derives repository and owner from GitHub's context, so release and
-Renovate operations target the new organization automatically. Bot credentials
-must also be authorized for that organization (including any approval or SSO
-requirements). Repository-level settings and organization-level secret access
-are separate; check both after a repository transfer.
-
-The shared actions remain in `tdesaules/github-actions`, with their images under
-`ghcr.io/tdesaules/github-actions`. The organization's Actions policy must allow
-that catalog and the pinned official actions. Transferring the application does
-not require renaming its existing GTK/desktop ID: keeping that stable preserves
-installed desktop integration and compositor rules.
+Authorize the App for `niri-tonic/niri-tonic-files`, including access to any
+organization-level secrets. The organization's Actions policy must allow
+`tdesaules/github-actions` and the pinned official actions; catalog images are
+published under `ghcr.io/tdesaules/github-actions`.
 
 Renovate uses the shared App's installation token; no separate bot account or
 `RENOVATE_TOKEN` secret is needed. Issues permission enables its Dependency
@@ -129,8 +111,8 @@ HTTPS credential), separate from the job and release-App tokens.
 
 Development remains at `0.1.0` without automatic releases.
 
-1. Push the prepared application commits and workflow when ready.
-2. Configure the App and bot settings above.
+1. Confirm that the `main` branch CI has passed.
+2. Configure the App settings above.
 3. Open the repository's **Actions → main → Run workflow**.
 4. Select branch `main`, mode `prepare`, and enable `initial-release`.
 5. The pipeline qualifies AMD64 and ARM64 artifacts, then prepares **1.0.0**.
@@ -169,16 +151,3 @@ the current source dependency inventory against updated advisory data; these
 reports are explicitly source-bound, not presented as scans of an old binary.
 Manual maintenance defaults to a Renovate dry run; turn off `renovate-dry-run`
 to allow update branches/PRs.
-
-## Local validation
-
-```sh
-make check
-make check-filen check-google-drive
-python3 -m unittest discover -s .github/scripts -v
-```
-
-The policy fixtures require PyYAML. Local validation and local native container
-qualification are distinct from a successful hosted run. The application workflow
-is prepared locally; activation and its first release require the GitHub setup
-and push described above.

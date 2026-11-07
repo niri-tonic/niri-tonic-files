@@ -159,18 +159,13 @@ staged items. Refresh before retrying; ambiguous mutations are not automatically
 replayed. Cross-account moves verify copied source metadata before deleting source
 items, but are not distributed transactions.
 
-## Isolated validation
+## Testing
 
-```sh
-cargo test --locked
-make check-google-drive
-python3 scripts/check-connectors.py --mixed-providers
-```
-
-The GUI scenario uses offline account processes and temporary files, not Google
-or Filen. OAuth and HTTP behavior are tested with injected responses/local loopback
-fixtures. No real accounts or credentials were used. Live consent, API permissions,
-quotas, service behavior and cross-client races still require real-account validation.
+OAuth and HTTP tests use injected responses and local loopback fixtures; desktop
+scenarios use mock accounts. Live consent, API permissions, quotas and cross-client
+races remain unverified. See
+[testing](https://github.com/niri-tonic/niri-tonic-files/blob/main/docs/validation.md)
+for commands.
 
 References: [installed-app OAuth](https://developers.google.com/identity/protocols/oauth2/native-app),
 [Drive scopes](https://developers.google.com/workspace/drive/api/guides/api-specific-auth),

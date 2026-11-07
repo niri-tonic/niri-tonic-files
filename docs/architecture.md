@@ -10,10 +10,6 @@ GTK's widgets also give keyboard selection and visible focus a mature foundation
 This app uses GTK directly rather than libadwaita so its palette and geometry can
 follow Nord/Dank consistently.
 
-Observed desktop conventions: Nord background `#2e3440`, surface `#3b4252`, focus
-`#81a1c1`, 12 px radii and gaps. Dank fonts are Comfortaa 600 and Geist Mono on the
-validation machine. These are **discovered**, not hard-coded font requirements.
-
 ## Modules
 
 | Module | Responsibility |
@@ -106,7 +102,7 @@ close; after GTK exits, the process waits for that write to finish.
   original may be partially retained. Same-filesystem moves are atomic renames.
 - Ordinary permission bits are copied; setuid/setgid bits are not. Ownership,
   ACLs, xattrs, hard-link topology, sparse extents and timestamps are not replicated
-  by this MVP. It is not a backup utility.
+  by the application. It is not a backup utility.
 - Batch operations stop at the first error and report the number completed.
   Earlier completed items remain. A collision never prompts for silent replacement.
 - `.archive` is a real sibling directory. Archives retain the original basename;
@@ -146,4 +142,5 @@ The application and creation dialogs are undecorated. A single spacing token
 controls outer margins and pane gaps; menus/dialogs use the raised surface and
 darker buttons.
 `LANGUAGE=en` is set before GTK starts so toolkit-owned dialogs are also English.
-Multi-monitor and assistive-technology acceptance checks are listed in validation.
+Multi-monitor and assistive-technology acceptance checks are listed in
+[testing](validation.md#validation-limits).

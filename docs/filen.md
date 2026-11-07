@@ -6,7 +6,7 @@ process and authenticated session. The sidebar shows both the name and **Filen**
 
 ## Install
 
-Install Node.js (a current LTS release) and npm, in addition to the Rust/GTK
+Install Node.js 22+ and npm, in addition to the Rust/GTK
 requirements. From this repository:
 
 ```sh
@@ -153,21 +153,9 @@ failure recovery. Enable `view.hidden: true` to inspect staging items. Refresh t
 affected folders before retrying a mutation. Host and adapter never automatically
 replay an ambiguous mutation after disconnect.
 
-## Validation boundary
+## Testing
 
-The implementation has isolated Rust storage/protocol tests, SDK-adapter tests
-with an injected fake SDK, and an optional GTK/Niri test using local mock account
-processes:
-
-```sh
-cargo test --locked
-make check-filen
-python3 scripts/check-connectors.py --protocol-only
-python3 scripts/check-connectors.py
-```
-
-The GUI test takes focus and clipboard ownership and confines all file operations
-to temporary directories. It does not connect to Filen. As requested, no real
-accounts or credentials were used. Live authentication/2FA, encrypted service
-transfers, quotas and concurrent external-client behavior still need separate
-verification with disposable accounts before production use.
+Tests use an injected SDK and local mock accounts. Live authentication/2FA,
+encrypted service transfers, quotas and external-client races remain unverified.
+See [testing](https://github.com/niri-tonic/niri-tonic-files/blob/main/docs/validation.md)
+for commands and desktop scenarios.

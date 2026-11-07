@@ -12,8 +12,7 @@ A minimal, English-language Rust file explorer for Linux, Wayland, **Niri** and
   Home and favorites follow this same rule.
 - The active pane's title is accented. Close either pane independently; the survivor
   expands. Closing the last column shows an empty workspace, never closes the app.
-- A right sidebar takes one third of the content width and contains Home,
-  persistent favorites and optional connector slots.
+- A right sidebar contains Home, persistent favorites and optional cloud accounts.
 - The borderless bottom path field accepts full paths, `~/` and local file URIs.
   Non-UTF-8 paths use reversible file URIs. Favorites offer an Open Parent Folder action.
 - Selection, ranges, keyboard shortcuts, context menus, clipboard and file drops.
@@ -99,7 +98,7 @@ then the legacy `DankMaterialShell/settings.json`. It uses the interface family,
 monospace family and weight. Without Dank, GTK's system font is retained. Explicit
 `font`, `monospace_font` and `font_size` override discovery.
 
-The first theme is [themes/nord.yaml](themes/nord.yaml). Copy it and set
+The default theme is [themes/nord.yaml](themes/nord.yaml). Copy it and set
 `appearance.theme` to its absolute path for another theme. Colors, spacing, row
 height and corner radius are validated and kept separate from logic.
 Symbolic system icons, visible focus, native accessible controls and reduced motion
@@ -124,27 +123,14 @@ creation, prefilled with the current name. Collisions are reported without repla
 | Ctrl+T | Add a pane showing the current folder when fewer than two are open; otherwise close the active pane |
 | Ctrl+Escape | Close the application |
 
-The previous file-action bindings are disabled: Alt+Left/Right/Up, Backspace,
-Ctrl+L/Q/W/X/H/N/Shift+N/E/Shift+E/Shift+R, F1/F2/F5, Delete, Shift+Delete,
-Menu and Shift+F10. Enter no longer opens selected files. Escape no longer cancels
-file operations globally. Ctrl+D now deletes instead of toggling favorites.
-Text fields retain normal editing controls; Tab and arrow keys retain widget focus navigation.
-
-Clicking blank space clears the selection. Each row shows its modification date
-and size on one right-aligned line in a continuous darker sub-column. Its width
-is shared by all metadata cells and its background spans the entire pane, including
-the header and empty space below the last item. Nord uses `#3b4252` for the pane,
-`#434c5e` for metadata and `#4c566a` for selection; folder sizes
-describe the directory entry, not a recursive total. Long names are ellipsized
-and their full name is available on hover. Contiguous selections form one rounded
-block, with no rounded corners between adjacent selected rows.
-Success notifications and item counters are hidden. Errors and ongoing operation
-progress remain visible. Context-menu items darken only on hover.
+Text fields retain normal editing controls; Tab and arrow keys navigate widget
+focus. Clicking blank space clears the selection. Rows show modification dates
+and sizes; folder sizes describe the directory entry, not a recursive total.
+Hover over a truncated name to see it in full.
 
 Favorite rows have their own right-click menu: **Remove from Favorites** detaches
 the shortcut, and **Open Parent Folder** navigates to its parent. Neither operation
-deletes the favorite's target. Pane-close crosses keep their foreground color on
-a red hover background. Outer margins and pane gaps use the same theme spacing.
+deletes the favorite's target.
 
 Drops copy files onto a directory row or into a column, including between windows
 and compatible applications. Use Cut/Paste for moves. External clipboard
@@ -176,34 +162,19 @@ have deleted some children when cancelled. A single atomic rename or Trash hando
 cannot be interrupted. Closing during a job keeps the window open until completion
 or cancellation. See [architecture](docs/architecture.md) for operation guarantees.
 
-## Validation and scope
+## Development and scope
 
 The six-job GitHub workflow prepares native AMD64/ARM64 binaries, qualifies the
 exact archives, and publishes stable releases from annotated preparation tags.
 See [CI setup and first release](docs/ci-release.md) for App/bot credentials,
 the explicit initial 1.0.0 release, artifact retention and platform requirements.
 
-```sh
-make check
-make check-ci                 # Python 3 + PyYAML, workflow policy fixtures
-GDK_BACKEND=wayland cargo run --locked -- --smoke-test
-# Optional real keyboard/pointer test, inside Niri with wtype and Python gi/AT-SPI:
-python3 scripts/check-wayland.py
-```
+See [testing](docs/validation.md) for local checks, desktop scenarios and validation
+limits, [architecture](docs/architecture.md) for implementation details, and
+[connectors](docs/connectors.md) for the storage contract and process protocol.
 
-The smoke test creates its own temporary fixture and exercises real mapped GTK
-widgets. The opt-in desktop test also moves the pointer and replaces clipboard
-contents, using only a temporary Home for file operations.
-[Validation notes](docs/validation.md) record the Niri/Dank checks and the
-remaining manual checks. Core tests cover collisions, cancellation, Trash,
-archive/restore, links, non-UTF-8 names, permissions, configuration and connectors.
-
-Local, Filen and Google Drive are implemented. Filen has been verified with isolated SDK,
-protocol, transfer and mock-account tests, without using real credentials. Live
-account validation remains outstanding. There is no automatic sync, thumbnail
-pipeline or indexed search. The connector contract and versioned process protocol
-are documented in [connectors](docs/connectors.md). Google Drive covers My Drive
-and DOCX/XLSX/PPTX exports using OAuth; shared drives are outside the first version.
-Its validation also uses offline fixtures, without real account credentials.
+Cloud connectors are covered by offline tests; live-account validation remains
+outstanding. Google Drive supports My Drive and DOCX/XLSX/PPTX exports, not shared
+drives. Automatic sync, thumbnails and indexed search are not implemented.
 
 Licensed under [GPL-3.0-only](LICENSE).
