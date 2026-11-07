@@ -167,3 +167,28 @@ sync is not implemented.
 - Application/Drive staged installation and uninstallation passed, including
   installed adapter syntax and binary help checks. Documented OAuth and Filen
   YAML examples passed `--check-config`.
+
+## CI preparation — 2026-11-07
+
+- Explicit inline credential values pass three additional Rust regressions:
+  exact YAML roundtrips, redacted Debug/validation output, and private-pipe login
+  for both cloud providers. The complete application suite passes 54 Rust tests.
+- `--version` reports the compiled identity without requiring HOME or a display.
+- Prototype Fedora 44 native AMD64 action containers built the real application
+  and qualified the same archive bytes: Rust tests, 38 Node tests, offline mock
+  protocol, isolated configuration and real GTK mapping under Weston passed.
+  The diagnostic build embedded `1.0.0`; it was not an application release.
+- Workflow syntax and all five CI-policy fixtures pass locally, including
+  immutable action pins, routing and security-report separation.
+- Catalog preparation [42384772496](https://github.com/tdesaules/github-actions/actions/runs/42384772496)
+  and tag verification [42398778628](https://github.com/tdesaules/github-actions/actions/runs/42398778628)
+  succeeded. Catalog release [1.6.0](https://github.com/tdesaules/github-actions/releases/tag/1.6.0)
+  publishes the qualified native images; all 17 consumed images were verified
+  anonymously accessible on GHCR with AMD64 and ARM64 variants.
+- Consumer actions are pinned to catalog commit
+  `ccd2be174adf4b29b71ce80cd76994ff97e1e8b8`, which removes temporary bootstraps
+  and retains those published image digests. Its post-activation hosted run
+  [42399138830](https://github.com/tdesaules/github-actions/actions/runs/42399138830)
+  remains pending; confirm success before activation of the consumer workflow.
+- The application workflow has not been pushed or executed on GitHub; the user
+  chose local preparation and will configure its App/bot credentials separately.

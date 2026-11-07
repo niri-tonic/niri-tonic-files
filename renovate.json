@@ -1,0 +1,9 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":dependencyDashboard"],
+  "enabledManagers": ["cargo", "npm", "github-actions", "dockerfile"],
+  "ignorePaths": ["target/**", "**/node_modules/**"],
+  "automerge": false,
+  "prConcurrentLimit": 3,
+  "labels": ["dependencies"]
+}

@@ -178,8 +178,14 @@ or cancellation. See [architecture](docs/architecture.md) for operation guarante
 
 ## Validation and scope
 
+The six-job GitHub workflow prepares native AMD64/ARM64 binaries, qualifies the
+exact archives, and publishes stable releases from annotated preparation tags.
+See [CI setup and first release](docs/ci-release.md) for App/bot credentials,
+the explicit initial 1.0.0 release, artifact retention and platform requirements.
+
 ```sh
 make check
+make check-ci                 # Python 3 + PyYAML, workflow policy fixtures
 GDK_BACKEND=wayland cargo run --locked -- --smoke-test
 # Optional real keyboard/pointer test, inside Niri with wtype and Python gi/AT-SPI:
 python3 scripts/check-wayland.py

@@ -1,0 +1,434 @@
+name: main
+
+on:
+  push:
+    branches: ['**']
+    tags: ['*']
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Prepare a release or run independent maintenance
+        type: choice
+        required: true
+        default: prepare
+        options: [prepare, maintenance]
+      initial-release:
+        description: Explicitly prepare the first official release (1.0.0)
+        type: boolean
+        default: false
+      renovate-dry-run:
+        description: Resolve dependency updates without creating branches or PRs
+        type: boolean
+        default: true
+  schedule:
+    - cron: '37 5 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: >-
+    niri-tonic-files-${{ (github.event_name == 'schedule' ||
+    (github.event_name == 'workflow_dispatch' && inputs.mode == 'maintenance')) && 'maintenance' ||
+    (github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')) && 'release' || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/') }}
+
+jobs:
+  check:
+    if: github.event_name != 'schedule' && !(github.event_name == 'workflow_dispatch' && inputs.mode == 'maintenance')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      mode: ${{ steps.plan.outputs.mode }}
+      source_sha: ${{ steps.plan.outputs.source_sha }}
+      version: ${{ steps.plan.outputs.version }}
+      has_lint: ${{ steps.plan.outputs.has_lint }}
+      has_images: ${{ steps.plan.outputs.has_images }}
+      has_tests: ${{ steps.plan.outputs.has_tests }}
+      has_release: ${{ steps.plan.outputs.has_release }}
+      lint_matrix: ${{ steps.plan.outputs.lint_matrix }}
+      build_matrix: ${{ steps.plan.outputs.build_matrix }}
+      test_matrix: ${{ steps.plan.outputs.test_matrix }}
+      plan_artifact: ${{ steps.plan.outputs.plan_artifact }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Select source-bound checks and release mode
+        id: plan
+        uses: tdesaules/github-actions/workflow/plan-rust-gtk-release@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        with:
+          event: ${{ github.event_name }}
+          ref: ${{ github.ref }}
+          before: ${{ github.event.before }}
+          source-sha: ${{ github.sha }}
+          mode: ${{ inputs.mode }}
+          initial-release: ${{ inputs.initial-release || false }}
+          config: cliff.toml
+          output: .build/plan.json
+      - name: Retain execution plan
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ steps.plan.outputs.plan_artifact }}
+          path: .build/plan.json
+          include-hidden-files: true
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 90
+
+  lint:
+    needs: [check]
+    if: ${{ !cancelled() && needs.check.result == 'success' && needs.check.outputs.has_lint == 'true' }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.check.outputs.lint_matrix) }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ needs.check.outputs.source_sha }}
+          persist-credentials: false
+      - name: Rust, GTK resources and connector syntax
+        if: matrix.id == 'rust-gtk'
+        uses: tdesaules/github-actions/lint/rust-gtk@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        with:
+          directory: .
+          output: .build/reports/lint/rust-gtk.json
+      - name: GitHub workflow syntax
+        if: matrix.id == 'actionlint'
+        uses: tdesaules/github-actions/lint/actionlint@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        with:
+          files: ${{ toJSON(matrix.files) }}
+      - name: YAML syntax and duplicate keys
+        if: matrix.id == 'yaml'
+        uses: tdesaules/github-actions/lint/yaml@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        with:
+          files: ${{ toJSON(matrix.files) }}
+      - name: TOML syntax
+        if: matrix.id == 'toml'
+        uses: tdesaules/github-actions/lint/toml@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        with:
+          files: ${{ toJSON(matrix.files) }}
+      - name: Markdown documentation
+        if: matrix.id == 'markdownlint'
+        uses: tdesaules/github-actions/lint/markdownlint@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        with:
+          files: ${{ toJSON(matrix.files) }}
+      - name: Retain Rust lint report
+        if: ${{ always() && matrix.id == 'rust-gtk' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lint-rust-gtk-${{ github.run_id }}
+          path: .build/reports/lint/
+          include-hidden-files: true
+          if-no-files-found: warn
+          overwrite: true
+
+  build:
+    needs: [check, lint]
+    if: >-
+      ${{ !cancelled() && needs.check.result == 'success' && needs.check.outputs.has_images == 'true' &&
+      ((needs.check.outputs.has_lint == 'true' && needs.lint.result == 'success') ||
+       (needs.check.outputs.has_lint == 'false' && needs.lint.result == 'skipped')) }}
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix: ${{ fromJSON(needs.check.outputs.build_matrix) }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ needs.check.outputs.source_sha }}
+          persist-credentials: false
+      - name: Build native binary and untested archive
+        id: candidate
+        uses: tdesaules/github-actions/workflow/build-rust-gtk@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        with:
+          directory: ${{ matrix.directory }}
+          source-sha: ${{ needs.check.outputs.source_sha }}
+          version: ${{ needs.check.outputs.version }}
+          arch: ${{ matrix.arch }}
+          output: .build/candidate/${{ matrix.arch }}
+      - name: Transfer exact candidate and untested receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: candidate-${{ matrix.arch }}-${{ github.run_id }}
+          path: |
+            ${{ steps.candidate.outputs.archive }}
+            ${{ steps.candidate.outputs.receipt }}
+          include-hidden-files: true
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 90
+
+  test:
+    needs: [check, lint, build]
+    if: >-
+      ${{ !cancelled() && needs.check.result == 'success' && needs.check.outputs.has_tests == 'true' &&
+      ((needs.check.outputs.has_lint == 'true' && needs.lint.result == 'success') ||
+       (needs.check.outputs.has_lint == 'false' && needs.lint.result == 'skipped')) &&
+      ((needs.check.outputs.has_images == 'true' && needs.build.result == 'success') ||
+       (needs.check.outputs.has_images == 'false' && needs.build.result == 'skipped')) }}
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix: ${{ fromJSON(needs.check.outputs.test_matrix) }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Retrieve this run's candidate
+        if: matrix.source == 'candidate'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: candidate-${{ matrix.arch }}-${{ github.run_id }}
+          path: .build/candidate/${{ matrix.arch }}
+      - name: Verify tag provenance and retrieve immutable prepared artifacts
+        if: matrix.source == 'published'
+        id: released
+        uses: tdesaules/github-actions/workflow/read-binary-release@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        with:
+          tag: ${{ github.ref_name }}
+          repository: ${{ github.repository }}
+          token: ${{ github.token }}
+          output: .build/released
+      - name: Checkout the original binary source for tag qualification
+        if: matrix.source == 'published'
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ needs.check.outputs.source_sha }}
+          path: .build/source
+          persist-credentials: false
+      - name: Qualify exact binary, unit suites and headless Wayland behavior
+        id: qualify
+        uses: tdesaules/github-actions/workflow/test-rust-gtk@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        with:
+          directory: ${{ matrix.source == 'published' && '.build/source' || '.' }}
+          source: ${{ matrix.source }}
+          source-run-id: ${{ steps.released.outputs.run_id }}
+          source-run-attempt: ${{ steps.released.outputs.run_attempt }}
+          archive: ${{ format('{0}/niri-tonic-files-{1}-linux-{2}.tar.gz', matrix.source == 'published' && steps.released.outputs[format('{0}_directory', matrix.arch)] || format('.build/candidate/{0}', matrix.arch), needs.check.outputs.version, matrix.arch) }}
+          receipt: ${{ format('{0}/niri-tonic-files-{1}-linux-{2}.tar.gz.receipt.json', matrix.source == 'published' && steps.released.outputs[format('{0}_directory', matrix.arch)] || format('.build/candidate/{0}', matrix.arch), needs.check.outputs.version, matrix.arch) }}
+          source-sha: ${{ needs.check.outputs.source_sha }}
+          version: ${{ needs.check.outputs.version }}
+          arch: ${{ matrix.arch }}
+          output: .build/qualified/${{ matrix.arch }}
+      - name: Retain exact qualified archive and receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qualified-${{ matrix.arch }}-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: |
+            ${{ steps.qualify.outputs.archive }}
+            ${{ steps.qualify.outputs.receipt }}
+          include-hidden-files: true
+          if-no-files-found: error
+          overwrite: false
+          retention-days: 90
+      - name: Generate advisory SBOM for the exact released payload
+        if: ${{ !cancelled() && steps.qualify.outcome == 'success' && matrix.scan }}
+        id: sbom
+        continue-on-error: true
+        timeout-minutes: 10
+        uses: tdesaules/github-actions/oci/new-sbom@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        with:
+          source: dir:${{ steps.qualify.outputs.extracted-root }}
+          format: spdx-json
+          output: .build/security/${{ matrix.arch }}/sbom.spdx.json
+      - name: Advisory vulnerability scan
+        if: ${{ !cancelled() && steps.sbom.outcome == 'success' }}
+        id: scan
+        continue-on-error: true
+        timeout-minutes: 15
+        uses: tdesaules/github-actions/oci/test-vulnerabilities@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        with:
+          sbom: .build/security/${{ matrix.arch }}/sbom.spdx.json
+          fail-on: none
+          output: .build/security/${{ matrix.arch }}/grype.json
+      - name: Summarize actual advisory outcomes
+        if: ${{ !cancelled() && steps.qualify.outcome == 'success' }}
+        continue-on-error: true
+        uses: tdesaules/github-actions/workflow/summarize-security@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        with:
+          subject: sha256:${{ steps.qualify.outputs.sha256 }}
+          sbom-outcome: ${{ steps.sbom.outcome }}
+          scan-outcome: ${{ steps.scan.outcome }}
+          sbom: .build/security/${{ matrix.arch }}/sbom.spdx.json
+          report: .build/security/${{ matrix.arch }}/grype.json
+          output: .build/security/${{ matrix.arch }}/summary.json
+      - name: Retain functional diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: test-report-${{ matrix.arch }}-${{ github.run_id }}
+          path: .build/qualified/${{ matrix.arch }}/test-report.json
+          include-hidden-files: true
+          if-no-files-found: warn
+          overwrite: true
+      - name: Retain advisory reports separately
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: security-${{ matrix.arch }}-${{ github.run_id }}
+          path: .build/security/${{ matrix.arch }}/
+          include-hidden-files: true
+          if-no-files-found: warn
+          overwrite: true
+          retention-days: 90
+
+  release:
+    needs: [check, lint, build, test]
+    if: >-
+      ${{ !cancelled() && needs.check.result == 'success' && needs.check.outputs.has_release == 'true' &&
+      (needs.check.outputs.mode == 'prepare' || needs.check.outputs.mode == 'publish') &&
+      ((needs.check.outputs.has_lint == 'true' && needs.lint.result == 'success') ||
+       (needs.check.outputs.has_lint == 'false' && needs.lint.result == 'skipped')) &&
+      ((needs.check.outputs.has_images == 'true' && needs.build.result == 'success') ||
+       (needs.check.outputs.has_images == 'false' && needs.build.result == 'skipped')) &&
+      ((needs.check.outputs.has_tests == 'true' && needs.test.result == 'success') ||
+       (needs.check.outputs.has_tests == 'false' && needs.test.result == 'skipped')) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Download source-bound execution plan
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: ${{ needs.check.outputs.plan_artifact }}
+          path: .build
+      - name: Download this run's complete qualified set
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: qualified-*-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: .build/qualified
+      - name: Create release App token
+        if: needs.check.outputs.mode == 'prepare'
+        id: app-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349
+        with:
+          app-id: ${{ vars.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+      - name: Prepare metadata and annotated tag from qualified artifacts
+        if: needs.check.outputs.mode == 'prepare'
+        uses: tdesaules/github-actions/workflow/prepare-binary-release@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        with:
+          repository: ${{ github.repository }}
+          source-sha: ${{ needs.check.outputs.source_sha }}
+          plan: .build/plan.json
+          qualified-directory: .build/qualified
+          config: cliff.toml
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Publish the tag's exact binaries and checksums
+        if: needs.check.outputs.mode == 'publish'
+        uses: tdesaules/github-actions/workflow/publish-binary-release@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        with:
+          repository: ${{ github.repository }}
+          tag: ${{ github.ref_name }}
+          qualified-directory: .build/qualified
+          token: ${{ github.token }}
+
+  maintenance:
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'maintenance')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate independent maintenance routing
+        id: route
+        uses: tdesaules/github-actions/workflow/plan-rust-gtk-release@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        with:
+          event: ${{ github.event_name }}
+          ref: ${{ github.ref }}
+          source-sha: ${{ github.sha }}
+          mode: maintenance
+          output: .build/maintenance-plan.json
+      - name: Create shared bot App token for Renovate
+        if: ${{ !cancelled() && steps.route.outcome == 'success' }}
+        id: bot-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349
+        with:
+          app-id: ${{ vars.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+      - name: Update dependencies using the shared bot App
+        if: ${{ !cancelled() && steps.route.outcome == 'success' && steps.bot-token.outcome == 'success' }}
+        uses: tdesaules/github-actions/maintenance/update-dependencies@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        with:
+          repository: ${{ github.repository }}
+          token: ${{ steps.bot-token.outputs.token }}
+          dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.renovate-dry-run || false }}
+      - name: Enumerate documentation links
+        if: ${{ !cancelled() && steps.route.outcome == 'success' }}
+        id: files
+        uses: tdesaules/github-actions/workflow/get-changed-files@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        with:
+          full: 'true'
+          after: ${{ github.sha }}
+      - name: Check documentation links
+        if: ${{ !cancelled() && steps.files.outcome == 'success' && steps.files.outputs.lychee-changed == 'true' }}
+        uses: tdesaules/github-actions/lint/lychee@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        with:
+          files: ${{ steps.files.outputs.lychee-files }}
+          config: lychee.toml
+      - name: Generate advisory source dependency SBOM
+        if: ${{ !cancelled() && steps.route.outcome == 'success' }}
+        id: sbom
+        continue-on-error: true
+        timeout-minutes: 10
+        uses: tdesaules/github-actions/oci/new-sbom@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        with:
+          source: dir:.
+          format: spdx-json
+          output: .build/security/source/sbom.spdx.json
+      - name: Rescan source dependencies with current advisory data
+        if: ${{ !cancelled() && steps.sbom.outcome == 'success' }}
+        id: scan
+        continue-on-error: true
+        timeout-minutes: 15
+        uses: tdesaules/github-actions/oci/test-vulnerabilities@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        with:
+          sbom: .build/security/source/sbom.spdx.json
+          fail-on: none
+          output: .build/security/source/grype.json
+      - name: Summarize actual maintenance scan outcomes
+        if: ${{ !cancelled() && steps.route.outcome == 'success' }}
+        continue-on-error: true
+        uses: tdesaules/github-actions/workflow/summarize-security@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        with:
+          subject: git:${{ github.sha }}
+          sbom-outcome: ${{ steps.sbom.outcome }}
+          scan-outcome: ${{ steps.scan.outcome }}
+          sbom: .build/security/source/sbom.spdx.json
+          report: .build/security/source/grype.json
+          output: .build/security/source/summary.json
+      - name: Retain advisory maintenance reports
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: maintenance-security-${{ github.run_id }}
+          path: .build/security/source/
+          include-hidden-files: true
+          if-no-files-found: warn
+          overwrite: true

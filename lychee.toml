@@ -1,0 +1,10 @@
+# Network link checks run in maintenance, not as a build/release prerequisite.
+timeout = 20
+max_retries = 2
+exclude_all_private = true
+exclude = [
+  '^filen:',
+  '^drive:',
+  '^file:',
+  '^https://github.com/niri-tonic/niri-tonic-files/(compare|releases/tag)/',
+]

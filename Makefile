@@ -1,11 +1,12 @@
 PREFIX ?= $(HOME)/.local
 CARGO ?= cargo
 NPM ?= npm
+PYTHON ?= python3
 APP_ID = io.github.tdesaules.NiriTonicFiles
 FILEN_DIR = $(DESTDIR)$(PREFIX)/share/niri-tonic-files/plugins/filen
 DRIVE_DIR = $(DESTDIR)$(PREFIX)/share/niri-tonic-files/plugins/google-drive
 
-.PHONY: build check filen check-filen check-google-drive install-plugin-sources install-filen install-google-drive install uninstall
+.PHONY: build check check-ci filen check-filen check-google-drive install-plugin-sources install-filen install-google-drive install uninstall
 
 build:
 	$(CARGO) build --release --locked
@@ -18,6 +19,9 @@ check-filen:
 
 check-google-drive:
 	$(NPM) test --prefix plugins/google-drive
+
+check-ci:
+	$(PYTHON) -m unittest discover -s .github/scripts -v
 
 install-plugin-sources:
 	install -d "$(FILEN_DIR)"
@@ -45,6 +49,7 @@ install: build install-plugin-sources
 	install -Dm644 docs/filen.md "$(DESTDIR)$(PREFIX)/share/doc/niri-tonic-files/filen.md"
 	install -Dm644 docs/google-drive.md "$(DESTDIR)$(PREFIX)/share/doc/niri-tonic-files/google-drive.md"
 	install -Dm644 docs/secrets.md "$(DESTDIR)$(PREFIX)/share/doc/niri-tonic-files/secrets.md"
+	install -Dm644 docs/ci-release.md "$(DESTDIR)$(PREFIX)/share/doc/niri-tonic-files/ci-release.md"
 	install -Dm644 LICENSE "$(DESTDIR)$(PREFIX)/share/licenses/niri-tonic-files/LICENSE"
 	-update-desktop-database "$(DESTDIR)$(PREFIX)/share/applications"
 
@@ -56,6 +61,7 @@ uninstall:
 	rm -f "$(DESTDIR)$(PREFIX)/share/doc/niri-tonic-files/filen.md"
 	rm -f "$(DESTDIR)$(PREFIX)/share/doc/niri-tonic-files/google-drive.md"
 	rm -f "$(DESTDIR)$(PREFIX)/share/doc/niri-tonic-files/secrets.md"
+	rm -f "$(DESTDIR)$(PREFIX)/share/doc/niri-tonic-files/ci-release.md"
 	rm -f "$(DESTDIR)$(PREFIX)/share/licenses/niri-tonic-files/LICENSE"
 	rm -rf "$(FILEN_DIR)"
 	rm -rf "$(DRIVE_DIR)"
