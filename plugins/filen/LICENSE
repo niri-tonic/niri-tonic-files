@@ -1,0 +1,14 @@
+SPDX-License-Identifier: AGPL-3.0-only
+
+The files in this adapter component are licensed under the GNU Affero General
+Public License, version 3 only. You may redistribute and/or modify them under
+the terms of that license as published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+The complete license is available at https://www.gnu.org/licenses/agpl-3.0.txt
+and is included by the installed official SDK in node_modules/@filen/sdk/LICENSE.
+
+The separately executed Rust host application is GPL-3.0-only.

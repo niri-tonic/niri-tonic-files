@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Niri Tonic Files
+GenericName=File Manager
+Comment=Explore local files in alternating panes
+Exec=niri-tonic-files %U
+TryExec=niri-tonic-files
+Icon=io.github.tdesaules.NiriTonicFiles
+Terminal=false
+Categories=System;FileTools;FileManager;
+MimeType=inode/directory;
+StartupNotify=true
+Keywords=Files;Folders;Explorer;Niri;Nord;

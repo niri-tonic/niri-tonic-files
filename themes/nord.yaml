@@ -1,0 +1,17 @@
+version: 1
+name: Nord
+colors:
+  background: '#2e3440'
+  surface: '#3b4252'
+  raised: '#434c5e'
+  border: '#4c566a'
+  text: '#eceff4'
+  muted: '#d8dee9'
+  accent: '#88c0d0'
+  focus: '#81a1c1'
+  danger: '#bf616a'
+  success: '#a3be8c'
+metrics:
+  radius: 12
+  spacing: 12
+  row_height: 44

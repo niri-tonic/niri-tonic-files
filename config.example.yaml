@@ -1,0 +1,73 @@
+# niri-tonic-files configuration, schema version 1.
+# All fields except version are optional. No file is required to start.
+version: 1
+
+appearance:
+  theme: nord                  # Or an absolute path to a theme YAML file.
+  follow_dank: true            # Read fontFamily/monoFontFamily/fontWeight from DMS.
+  font: null                   # Override family, e.g. "Comfortaa"; null = system.
+  monospace_font: null         # Example: "Geist Mono".
+  font_size: null              # Points, 8..36; null = GTK system size.
+
+favorites:
+  # - name: Projects
+  #   path: ~/Projects         # Absolute paths or ~/ paths; no shell expansion.
+  []
+
+associations:
+  # Each value is argv. File paths are appended as separate absolute arguments.
+  # No shell parsing, interpolation or {files} placeholders.
+  # Put "--" in the argv if your chosen application requires it.
+  extensions: {}              # Example: { txt: ["gedit", "--"] }
+  mime_types: {}              # Example: { "image/*": ["imv", "--"] }
+  # Priority: extension (lowercase, no dot), exact MIME, MIME family, system.
+
+navigation:
+  animations: true            # Also respects GTK's reduced-animation setting.
+  animation_ms: 220           # 0..2000; horizontal column transition.
+  restore_session: false      # Start in Home with one pane; true explicitly opts into session restore.
+
+view:
+  hidden: false
+  sort: name                  # name | modified | size
+  descending: false
+  folders_first: true
+
+connectors:
+  local:
+    read_only: false
+  instances: []
+  # Each unique id is an independent session/account; names may be customized.
+  # instances:
+  #   - id: filen-personal
+  #     name: Personal
+  #     type: filen
+  #     enabled: true
+  #     read_only: false
+  #     auth:
+  #       email: personal@example.com
+  #       password: { env: FILEN_PERSONAL_PASSWORD }
+  #       # Also supported: password: { value: "YOUR_PASSWORD" }
+  #       # Chezmoi/gopass template examples: docs/secrets.md.
+  #       # two_factor_code: { env: FILEN_PERSONAL_2FA }
+  #   - id: filen-work
+  #     name: Work
+  #     type: filen
+  #     enabled: true
+  #     auth:
+  #       email: work@example.com
+  #       password: { secret_service: filen-work-password }
+  # Node.js + the separately installed Filen adapter are required. See docs/filen.md.
+  # Google Drive uses browser OAuth instead of your Google password:
+  #   - id: drive-personal
+  #     name: Personal Drive
+  #     type: google_drive
+  #     enabled: true
+  #     read_only: false
+  #     oauth:
+  #       client_id: YOUR_DESKTOP_CLIENT_ID.apps.googleusercontent.com
+  #       client_secret: { env: GOOGLE_DRIVE_CLIENT_SECRET }
+  #       # Also supported: client_secret: { value: "YOUR_CLIENT_SECRET" }
+  #       persist_session: true
+  # OAuth tokens are stored privately outside this YAML. See docs/google-drive.md.
+  reserved: []                # Descriptive slots, not functioning cloud providers.

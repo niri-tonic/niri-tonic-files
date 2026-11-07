@@ -1,0 +1,13 @@
+{
+  "name": "niri-tonic-files-filen-adapter",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "scripts": { "test": "node --test test/*.test.mjs" },
+  "dependencies": { "@filen/sdk": "0.4.2" },
+  "overrides": {
+    "@filen/sdk": { "axios": "0.34.0" },
+    "js-crypto-key-utils": { "elliptic": "6.6.1" }
+  }
+}
