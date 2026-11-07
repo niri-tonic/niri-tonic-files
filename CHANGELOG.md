@@ -4,9 +4,31 @@ All notable changes are documented here using Keep a Changelog and Semantic Vers
 
 ## Unreleased
 
+## [1.0.0] - 2026-11-07
+
+
+
 ### Added
 
-- Two-pane GTK file explorer with local, Filen and Google Drive storage.
-- Named independent cloud accounts, cross-provider transfers and private file opening.
-- Configurable credential sources, including values rendered by chezmoi and gopass.
-- Keyboard navigation, numbered copies, archive/restore and persistent favorites.
+- Add the file explorer MVP with cloud connectors
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1.0.0]: https://github.com/niri-tonic/niri-tonic-files/releases/tag/1.0.0
+
