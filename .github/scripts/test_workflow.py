@@ -87,7 +87,8 @@ class WorkflowPolicy(unittest.TestCase):
         self.assertNotIn("needs", self.jobs["maintenance"])
         self.assertIn("github.event_name != 'schedule'", self.jobs["check"]["if"])
         self.assertIn("github.event_name == 'schedule'", self.jobs["maintenance"]["if"])
-        self.assertEqual(self.workflow["on"]["workflow_dispatch"]["inputs"]["mode"]["options"], ["prepare", "publish", "maintenance"])
+        self.assertEqual(self.workflow["on"]["workflow_dispatch"]["inputs"]["mode"]["options"], ["prepare", "maintenance"])
+        self.assertNotIn("release-tag", self.workflow["on"]["workflow_dispatch"]["inputs"])
 
     def test_selected_phases_must_succeed_and_only_empty_phases_may_skip(self):
         states = ("success", "skipped", "failure", "cancelled")
@@ -126,7 +127,6 @@ class WorkflowPolicy(unittest.TestCase):
             (dict(github_event_name="push", github_ref="refs/tags/1.0.0", mode="", tag=""), "refs/tags/1.0.0"),
             (dict(github_event_name="push", github_ref="refs/heads/main", mode="", tag=""), "event-sha"),
             (dict(github_event_name="workflow_dispatch", github_ref="refs/heads/main", mode="prepare", tag="1.0.0"), "event-sha"),
-            (dict(github_event_name="workflow_dispatch", github_ref="refs/heads/main", mode="publish", tag="1.0.0"), "refs/tags/1.0.0"),
         )
         for job in ("check", "test", "release"):
             checkout = self.jobs[job]["steps"][0]
@@ -142,14 +142,11 @@ class WorkflowPolicy(unittest.TestCase):
                 }
                 self.assertEqual(workflow_value(checkout["with"]["ref"], context), expected)
 
-    def test_manual_publication_reuses_tag_plan_only_from_main(self):
+    def test_publication_uses_tag_plan_and_preserves_event(self):
         planner = next(step for step in self.jobs["check"]["steps"] if step.get("id") == "plan")
         self.assertEqual(planner["with"]["source-sha"], "${{ steps.checkout.outputs.commit }}")
-        for branch, expected in (("main", "push"), ("other", "workflow_dispatch")):
-            context = {"github.event_name": "workflow_dispatch", "github.ref": "refs/heads/" + branch,
-                       "inputs.mode": "publish", "inputs.release-tag": "1.0.0"}
-            self.assertEqual(workflow_value(planner["with"]["event"], context), expected)
-            self.assertEqual(workflow_value(planner["with"]["ref"], context), "refs/tags/1.0.0")
+        self.assertEqual(planner["with"]["event"], "${{ github.event_name }}")
+        self.assertEqual(planner["with"]["ref"], "${{ github.ref }}")
         for job in ("test", "release"):
             for step in self.jobs[job]["steps"]:
                 if "/read-binary-release@" in step["uses"] or "/publish-binary-release@" in step["uses"]:

@@ -7,15 +7,11 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: Prepare, resume publication of an existing tag, or run maintenance
+        description: Prepare a release or run independent maintenance
         type: choice
         required: true
         default: prepare
-        options: [prepare, publish, maintenance]
-      release-tag:
-        description: Existing annotated stable tag to publish (publish mode only)
-        type: string
-        default: ''
+        options: [prepare, maintenance]
       initial-release:
         description: Explicitly prepare the first official release (1.0.0)
         type: boolean
@@ -59,17 +55,15 @@ jobs:
         id: checkout
         with:
           # Explicit tag refs preserve annotations; branch runs stay source-bound.
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'publish' && format('refs/tags/{0}', inputs.release-tag) || startsWith(github.ref, 'refs/tags/') && github.ref || github.sha }}
+          ref: ${{ startsWith(github.ref, 'refs/tags/') && github.ref || github.sha }}
           fetch-depth: 0
           persist-credentials: false
       - name: Select source-bound checks and release mode
         id: plan
         uses: tdesaules/github-actions/workflow/plan-rust-gtk-release@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
         with:
-          # Only main may route a recovery dispatch through tag verification.
-          # Other branches retain workflow_dispatch/publish and are rejected by the planner.
-          event: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'publish' && github.ref == 'refs/heads/main' && 'push' || github.event_name }}
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'publish' && format('refs/tags/{0}', inputs.release-tag) || github.ref }}
+          event: ${{ github.event_name }}
+          ref: ${{ github.ref }}
           before: ${{ github.event.before }}
           source-sha: ${{ steps.checkout.outputs.commit }}
           mode: ${{ inputs.mode }}
