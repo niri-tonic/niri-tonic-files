@@ -66,10 +66,10 @@ impl Ui {
             #[weak(rename_to = ui)]
             self,
             move |_, parameter| {
-                if let Some(uri) = parameter.and_then(|v| v.get::<String>()) {
-                    if let Ok(path) = ui.parse_path(&uri) {
-                        ui.navigate(path);
-                    }
+                if let Some(uri) = parameter.and_then(|v| v.get::<String>())
+                    && let Ok(path) = ui.parse_path(&uri)
+                {
+                    ui.navigate(path);
                 }
             }
         ));

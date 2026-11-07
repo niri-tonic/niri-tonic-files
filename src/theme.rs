@@ -139,25 +139,23 @@ fn css_string(value: &str) -> String {
 
 pub fn detect_fonts(appearance: &Appearance, paths: &Paths) -> Fonts {
     let mut fonts = Fonts::default();
-    if appearance.follow_dank {
-        if let Some(text) = ["dms/settings.json", "DankMaterialShell/settings.json"]
+    if appearance.follow_dank
+        && let Some(text) = ["dms/settings.json", "DankMaterialShell/settings.json"]
             .iter()
             .find_map(|name| std::fs::read_to_string(paths.config_home.join(name)).ok())
-        {
-            if let Ok(settings) = serde_json::from_str::<serde_json::Value>(&text) {
-                fonts.interface = settings["fontFamily"]
-                    .as_str()
-                    .filter(|s| !s.is_empty())
-                    .map(str::to_string);
-                fonts.mono = settings["monoFontFamily"]
-                    .as_str()
-                    .filter(|s| !s.is_empty())
-                    .map(str::to_string);
-                fonts.weight = settings["fontWeight"]
-                    .as_u64()
-                    .map(|n| n.clamp(100, 900) as u16);
-            }
-        }
+        && let Ok(settings) = serde_json::from_str::<serde_json::Value>(&text)
+    {
+        fonts.interface = settings["fontFamily"]
+            .as_str()
+            .filter(|s| !s.is_empty())
+            .map(str::to_string);
+        fonts.mono = settings["monoFontFamily"]
+            .as_str()
+            .filter(|s| !s.is_empty())
+            .map(str::to_string);
+        fonts.weight = settings["fontWeight"]
+            .as_u64()
+            .map(|n| n.clamp(100, 900) as u16);
     }
     if appearance.font.is_some() {
         fonts.interface.clone_from(&appearance.font);

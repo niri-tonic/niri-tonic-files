@@ -234,12 +234,11 @@ fn find_button(widget: &gtk::Widget, label: &str) -> Option<gtk::Button> {
         }
         false
     }
-    if let Some(button) = widget.downcast_ref::<gtk::Button>() {
-        if button.label().as_deref() == Some(label)
-            || button.child().is_some_and(|c| has_label(&c, label))
-        {
-            return Some(button.clone());
-        }
+    if let Some(button) = widget.downcast_ref::<gtk::Button>()
+        && (button.label().as_deref() == Some(label)
+            || button.child().is_some_and(|c| has_label(&c, label)))
+    {
+        return Some(button.clone());
     }
     let mut child = widget.first_child();
     while let Some(current) = child {

@@ -140,10 +140,8 @@ impl Ui {
                 Ok("Files ready".into())
             },
             move |ui, success| {
-                if success {
-                    if let Ok(mut files) = prepared.lock() {
-                        ui.choose_application(std::mem::take(&mut *files));
-                    }
+                if success && let Ok(mut files) = prepared.lock() {
+                    ui.choose_application(std::mem::take(&mut *files));
                 }
             },
         );
@@ -220,7 +218,7 @@ impl Ui {
                     let paths = paths.clone();
                     dialog.close();
                     ui.run_job("Opening files", false, move |_, _| {
-                        let app = gio::DesktopAppInfo::new(&id)
+                        let app = gio_unix::DesktopAppInfo::new(&id)
                             .ok_or("This application is no longer installed")?;
                         let files: Vec<_> = paths.iter().map(gio::File::for_path).collect();
                         app.launch(&files, gio::AppLaunchContext::NONE)

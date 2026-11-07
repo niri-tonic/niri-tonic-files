@@ -217,10 +217,10 @@ impl Ui {
                         let Some(current) = entry_of(&item) else {
                             return;
                         };
-                        if let Some(draft) = ui.rename.borrow_mut().as_mut() {
-                            if draft.location == current.location {
-                                draft.text = entry.text().to_string();
-                            }
+                        if let Some(draft) = ui.rename.borrow_mut().as_mut()
+                            && draft.location == current.location
+                        {
+                            draft.text = entry.text().to_string();
                         }
                     }
                 ));
@@ -263,10 +263,10 @@ impl Ui {
                     row,
                     move |gesture, _, x, y| {
                         ui.activate_column(index);
-                        if let Some(column) = ui.columns.borrow().get(index) {
-                            if !column.selection.is_selected(item.position()) {
-                                column.selection.select_item(item.position(), true);
-                            }
+                        if let Some(column) = ui.columns.borrow().get(index)
+                            && !column.selection.is_selected(item.position())
+                        {
+                            column.selection.select_item(item.position(), true);
                         }
                         gesture.set_state(gtk::EventSequenceState::Claimed);
                         ui.context_menu(&row, x, y);
@@ -308,10 +308,10 @@ impl Ui {
                     None,
                     move |_, _, _| {
                         ui.activate_column(index);
-                        if let Some(column) = ui.columns.borrow().get(index) {
-                            if !column.selection.is_selected(item.position()) {
-                                column.selection.select_item(item.position(), true);
-                            }
+                        if let Some(column) = ui.columns.borrow().get(index)
+                            && !column.selection.is_selected(item.position())
+                        {
+                            column.selection.select_item(item.position(), true);
                         }
                         let files: Vec<_> = ui
                             .selected_paths()
@@ -456,23 +456,23 @@ impl Ui {
             #[strong]
             editors,
             move |_, object| {
-                if let Some(item) = object.downcast_ref::<gtk::ListItem>() {
-                    if let Some(entry) = entry_of(item) {
-                        let names = item
-                            .child()
-                            .and_then(|row| row.first_child())
-                            .and_then(|icon| icon.next_sibling())
-                            .and_downcast::<gtk::Stack>();
-                        let mut editors = editors.borrow_mut();
-                        // GTK may bind a replacement row before unbinding the
-                        // old row for the same location during a model splice.
-                        if editors
-                            .get(&entry.location)
-                            .and_then(glib::WeakRef::upgrade)
-                            == names
-                        {
-                            editors.remove(&entry.location);
-                        }
+                if let Some(item) = object.downcast_ref::<gtk::ListItem>()
+                    && let Some(entry) = entry_of(item)
+                {
+                    let names = item
+                        .child()
+                        .and_then(|row| row.first_child())
+                        .and_then(|icon| icon.next_sibling())
+                        .and_downcast::<gtk::Stack>();
+                    let mut editors = editors.borrow_mut();
+                    // GTK may bind a replacement row before unbinding the
+                    // old row for the same location during a model splice.
+                    if editors
+                        .get(&entry.location)
+                        .and_then(glib::WeakRef::upgrade)
+                        == names
+                    {
+                        editors.remove(&entry.location);
                     }
                 }
             }

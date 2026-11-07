@@ -357,11 +357,9 @@ fn numbered_destination(destination: &Path, number: u64, is_directory: bool) -> 
         leaf.file_stem().unwrap_or(name)
     });
     numbered.push(format!("-{number}"));
-    if !is_directory {
-        if let Some(extension) = leaf.extension() {
-            numbered.push(".");
-            numbered.push(extension);
-        }
+    if !is_directory && let Some(extension) = leaf.extension() {
+        numbered.push(".");
+        numbered.push(extension);
     }
     Ok(parent(destination)?.join(numbered))
 }
