@@ -1,6 +1,6 @@
 [package]
 name = "niri-tonic-files"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2024"
 rust-version = "1.92"
 description = "A quiet, column-based Wayland file explorer for Niri and Dank Material Shell"
