@@ -28,7 +28,7 @@ concurrency:
 jobs:
   check:
     if: github.event_name != 'schedule' && !(github.event_name == 'workflow_dispatch' && inputs.mode == 'maintenance')
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     outputs:
       mode: ${{ steps.plan.outputs.mode }}
@@ -291,7 +291,7 @@ jobs:
        (needs.check.outputs.has_images == 'false' && needs.build.result == 'skipped')) &&
       ((needs.check.outputs.has_tests == 'true' && needs.test.result == 'success') ||
        (needs.check.outputs.has_tests == 'false' && needs.test.result == 'skipped')) }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     permissions:
       contents: write
@@ -342,7 +342,7 @@ jobs:
 
   maintenance:
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'maintenance')
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
