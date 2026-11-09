@@ -52,7 +52,7 @@ jobs:
           persist-credentials: false
       - name: Select source-bound checks and release mode
         id: plan
-        uses: tdesaules/github-actions/workflow/plan-rust-gtk-release@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        uses: tdesaules/github-actions/workflow/plan-rust-gtk-release@fa9bcc8a3595ee3993609ab3b024dd3f085e4232
         with:
           event: ${{ github.event_name }}
           ref: ${{ github.ref }}
@@ -86,28 +86,28 @@ jobs:
           persist-credentials: false
       - name: Rust, GTK resources and connector syntax
         if: matrix.id == 'rust-gtk'
-        uses: tdesaules/github-actions/lint/rust-gtk@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        uses: tdesaules/github-actions/lint/rust-gtk@fa9bcc8a3595ee3993609ab3b024dd3f085e4232
         with:
           directory: .
           output: .build/reports/lint/rust-gtk.json
       - name: GitHub workflow syntax
         if: matrix.id == 'actionlint'
-        uses: tdesaules/github-actions/lint/actionlint@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        uses: tdesaules/github-actions/lint/actionlint@fa9bcc8a3595ee3993609ab3b024dd3f085e4232
         with:
           files: ${{ toJSON(matrix.files) }}
       - name: YAML syntax and duplicate keys
         if: matrix.id == 'yaml'
-        uses: tdesaules/github-actions/lint/yaml@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        uses: tdesaules/github-actions/lint/yaml@fa9bcc8a3595ee3993609ab3b024dd3f085e4232
         with:
           files: ${{ toJSON(matrix.files) }}
       - name: TOML syntax
         if: matrix.id == 'toml'
-        uses: tdesaules/github-actions/lint/toml@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        uses: tdesaules/github-actions/lint/toml@fa9bcc8a3595ee3993609ab3b024dd3f085e4232
         with:
           files: ${{ toJSON(matrix.files) }}
       - name: Markdown documentation
         if: matrix.id == 'markdownlint'
-        uses: tdesaules/github-actions/lint/markdownlint@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        uses: tdesaules/github-actions/lint/markdownlint@fa9bcc8a3595ee3993609ab3b024dd3f085e4232
         with:
           files: ${{ toJSON(matrix.files) }}
       - name: Retain Rust lint report
@@ -139,7 +139,7 @@ jobs:
           persist-credentials: false
       - name: Build native binary and untested archive
         id: candidate
-        uses: tdesaules/github-actions/workflow/build-rust-gtk@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        uses: tdesaules/github-actions/workflow/build-rust-gtk@fa9bcc8a3595ee3993609ab3b024dd3f085e4232
         with:
           directory: ${{ matrix.directory }}
           source-sha: ${{ needs.check.outputs.source_sha }}
@@ -190,7 +190,7 @@ jobs:
       - name: Verify tag provenance and retrieve immutable prepared artifacts
         if: matrix.source == 'published'
         id: released
-        uses: tdesaules/github-actions/workflow/read-binary-release@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        uses: tdesaules/github-actions/workflow/read-binary-release@fa9bcc8a3595ee3993609ab3b024dd3f085e4232
         with:
           tag: ${{ needs.check.outputs.version }}
           repository: ${{ github.repository }}
@@ -205,7 +205,7 @@ jobs:
           persist-credentials: false
       - name: Qualify exact binary, unit suites and headless Wayland behavior
         id: qualify
-        uses: tdesaules/github-actions/workflow/test-rust-gtk@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        uses: tdesaules/github-actions/workflow/test-rust-gtk@fa9bcc8a3595ee3993609ab3b024dd3f085e4232
         with:
           directory: ${{ matrix.source == 'published' && '.build/source' || '.' }}
           source: ${{ matrix.source }}
@@ -233,7 +233,7 @@ jobs:
         id: sbom
         continue-on-error: true
         timeout-minutes: 10
-        uses: tdesaules/github-actions/oci/new-sbom@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        uses: tdesaules/github-actions/oci/new-sbom@fa9bcc8a3595ee3993609ab3b024dd3f085e4232
         with:
           source: dir:${{ steps.qualify.outputs.extracted-root }}
           format: spdx-json
@@ -243,7 +243,7 @@ jobs:
         id: scan
         continue-on-error: true
         timeout-minutes: 15
-        uses: tdesaules/github-actions/oci/test-vulnerabilities@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        uses: tdesaules/github-actions/oci/test-vulnerabilities@fa9bcc8a3595ee3993609ab3b024dd3f085e4232
         with:
           sbom: .build/security/${{ matrix.arch }}/sbom.spdx.json
           fail-on: none
@@ -251,7 +251,7 @@ jobs:
       - name: Summarize actual advisory outcomes
         if: ${{ !cancelled() && steps.qualify.outcome == 'success' }}
         continue-on-error: true
-        uses: tdesaules/github-actions/workflow/summarize-security@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        uses: tdesaules/github-actions/workflow/summarize-security@fa9bcc8a3595ee3993609ab3b024dd3f085e4232
         with:
           subject: sha256:${{ steps.qualify.outputs.sha256 }}
           sbom-outcome: ${{ steps.sbom.outcome }}
@@ -323,7 +323,7 @@ jobs:
           repositories: ${{ github.event.repository.name }}
       - name: Prepare metadata and annotated tag from qualified artifacts
         if: needs.check.outputs.mode == 'prepare'
-        uses: tdesaules/github-actions/workflow/prepare-binary-release@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        uses: tdesaules/github-actions/workflow/prepare-binary-release@fa9bcc8a3595ee3993609ab3b024dd3f085e4232
         with:
           repository: ${{ github.repository }}
           source-sha: ${{ needs.check.outputs.source_sha }}
@@ -333,7 +333,7 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
       - name: Publish the tag's exact binaries and checksums
         if: needs.check.outputs.mode == 'publish'
-        uses: tdesaules/github-actions/workflow/publish-binary-release@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        uses: tdesaules/github-actions/workflow/publish-binary-release@fa9bcc8a3595ee3993609ab3b024dd3f085e4232
         with:
           repository: ${{ github.repository }}
           tag: ${{ needs.check.outputs.version }}
@@ -351,7 +351,7 @@ jobs:
           persist-credentials: false
       - name: Validate independent maintenance routing
         id: route
-        uses: tdesaules/github-actions/workflow/plan-rust-gtk-release@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        uses: tdesaules/github-actions/workflow/plan-rust-gtk-release@fa9bcc8a3595ee3993609ab3b024dd3f085e4232
         with:
           event: ${{ github.event_name }}
           ref: ${{ github.ref }}
@@ -369,7 +369,7 @@ jobs:
           repositories: ${{ github.event.repository.name }}
       - name: Update dependencies using the shared bot App
         if: ${{ !cancelled() && steps.route.outcome == 'success' && steps.bot-token.outcome == 'success' }}
-        uses: tdesaules/github-actions/maintenance/update-dependencies@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        uses: tdesaules/github-actions/maintenance/update-dependencies@fa9bcc8a3595ee3993609ab3b024dd3f085e4232
         with:
           repository: ${{ github.repository }}
           token: ${{ steps.bot-token.outputs.token }}
@@ -377,13 +377,13 @@ jobs:
       - name: Enumerate documentation links
         if: ${{ !cancelled() && steps.route.outcome == 'success' }}
         id: files
-        uses: tdesaules/github-actions/workflow/get-changed-files@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        uses: tdesaules/github-actions/workflow/get-changed-files@fa9bcc8a3595ee3993609ab3b024dd3f085e4232
         with:
           full: 'true'
           after: ${{ github.sha }}
       - name: Check documentation links
         if: ${{ !cancelled() && steps.files.outcome == 'success' && steps.files.outputs.lychee-changed == 'true' }}
-        uses: tdesaules/github-actions/lint/lychee@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        uses: tdesaules/github-actions/lint/lychee@fa9bcc8a3595ee3993609ab3b024dd3f085e4232
         with:
           files: ${{ steps.files.outputs.lychee-files }}
           config: lychee.toml
@@ -392,7 +392,7 @@ jobs:
         id: sbom
         continue-on-error: true
         timeout-minutes: 10
-        uses: tdesaules/github-actions/oci/new-sbom@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        uses: tdesaules/github-actions/oci/new-sbom@fa9bcc8a3595ee3993609ab3b024dd3f085e4232
         with:
           source: dir:.
           format: spdx-json
@@ -402,7 +402,7 @@ jobs:
         id: scan
         continue-on-error: true
         timeout-minutes: 15
-        uses: tdesaules/github-actions/oci/test-vulnerabilities@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        uses: tdesaules/github-actions/oci/test-vulnerabilities@fa9bcc8a3595ee3993609ab3b024dd3f085e4232
         with:
           sbom: .build/security/source/sbom.spdx.json
           fail-on: none
@@ -410,7 +410,7 @@ jobs:
       - name: Summarize actual maintenance scan outcomes
         if: ${{ !cancelled() && steps.route.outcome == 'success' }}
         continue-on-error: true
-        uses: tdesaules/github-actions/workflow/summarize-security@ccd2be174adf4b29b71ce80cd76994ff97e1e8b8
+        uses: tdesaules/github-actions/workflow/summarize-security@fa9bcc8a3595ee3993609ab3b024dd3f085e4232
         with:
           subject: git:${{ github.sha }}
           sbom-outcome: ${{ steps.sbom.outcome }}
